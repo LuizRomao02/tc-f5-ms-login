@@ -1,14 +1,15 @@
+server:
+  port: 8081
+
 spring:
   application:
-    name: tc-f5-ms-login
+    name: ms-login
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/authenticate-fiap/protocol/openid-connect/certs
-  cloud:
-    discovery:
-      enabled: true
+          jwk-set-uri: http://localhost:8021/realms/tech-fiap-qa/protocol/openid-connect/certs
 
   datasource:
     url: jdbc:mysql://localhost:3306/tc_f5_ms_login?createDatabaseIfNotExist=true
@@ -20,13 +21,15 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: create-drop
+
   rabbitmq:
     host: localhost
+    port: 5672
     username: admin
     password: rabbit
-    port: 5672
     virtual-host: /
     listener:
+      type: simple
       simple:
         default-requeue-rejected: false
         retry:
@@ -35,22 +38,31 @@ spring:
           initial-interval: 5s
           multiplier: 2
 
-eureka:
-  instance:
-    prefer-ip-address: true
-    lease-renewal-interval-in-seconds: 30
-    instanceId: ${spring.application.name}
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
+#eureka:
+#  instance:
+#    prefer-ip-address: true
+#    lease-renewal-interval-in-seconds: 30
+#    instanceId: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+#  client:
+#    register-with-eureka: true
+#    fetch-registry: true
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka
 
+logging:
+  level:
+    org:
+      springframework:
+        security: debug
+
+# Configurações para o keycloak-admin-client
 keycloak:
-  auth-server-url: http://localhost:8080
-  realm: authenticate-fiap
-  resource: tc-f5-fiap
-  bearer-only: true
-  credentials:
-    secret: 9wrC1ubAiV2OdTpXcrCjUIgls1iK9b4X
+  realm: tech-fiap-qa
+  resource: mslogin
   use-resource-role-mappings: true
-  ssl-required: external
+  ssl-required: none
   principal-attribute: preferred_username
+  auth-server-url: http://localhost:8021
+  public-client: false
+  credentials:
+    secret: ml5ioShdkK458ux5aJANFGYWHzlLNknM

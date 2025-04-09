@@ -23,6 +23,6 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: 8080
     ports:
-      - "8080:8080"
+      - "8021:8080"
     depends_on:
       - keycloak-fiap-db
