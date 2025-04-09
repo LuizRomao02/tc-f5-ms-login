@@ -5,6 +5,20 @@ spring:
   application:
     name: ms-login
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: techchalengef5@gmail.com
+    password: rkzf fgbb kyiq oghr
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    protocol: smtp
+    default-encoding: UTF-8
+
   security:
     oauth2:
       resourceserver:

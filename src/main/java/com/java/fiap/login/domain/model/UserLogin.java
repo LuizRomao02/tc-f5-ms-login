@@ -30,6 +30,8 @@ public class UserLogin {
   @Column(nullable = false)
   private String username;
 
+  private String fullName;
+
   @Column(nullable = false)
   private String email;
 

@@ -21,6 +21,8 @@ public class TestClass {
         UserRegisteredEvent.builder()
             .email("luiz@email.com")
             .id("id-teste-teste")
+            .fullName("Luiz Romão")
+            .password("123456")
             .type(UserTypeEnum.DOCTOR)
             .name("Luiz")
             .build());
