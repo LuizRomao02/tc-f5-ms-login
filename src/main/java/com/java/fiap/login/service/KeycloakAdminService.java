@@ -1,5 +1,6 @@
 package com.java.fiap.login.service;
 
+import com.java.fiap.login.application.dto.InfoUserKeycloakDTO;
 import com.java.fiap.login.application.dto.UserKeycloak;
 import com.java.fiap.login.application.dto.UserLoginDTO;
 import com.java.fiap.login.domain.model.UserLogin;
@@ -17,4 +18,6 @@ public interface KeycloakAdminService {
   UserResource getUserResource(String userId);
 
   void confirmEmail(UserLogin userLogin);
+
+  void logout(InfoUserKeycloakDTO userKeycloak);
 }

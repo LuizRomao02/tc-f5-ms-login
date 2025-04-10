@@ -1,5 +1,6 @@
 package com.java.fiap.login.presentation;
 
+import com.java.fiap.login.application.dto.InfoUserKeycloakDTO;
 import com.java.fiap.login.application.dto.UserLoginDTO;
 import com.java.fiap.login.service.KeycloakAdminService;
 import com.java.fiap.login.service.UserService;
@@ -10,15 +11,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.representations.AccessToken;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,6 +39,12 @@ public class AuthenticationController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body(Map.of("error", "Username or password incorrect"));
     }
+  }
+
+  @PostMapping(value = "/logout")
+  public ResponseEntity<Void> logout(@ModelAttribute final InfoUserKeycloakDTO userKeycloak) {
+    keycloakAdminService.logout(userKeycloak);
+    return ResponseEntity.ok().build();
   }
 
   @GetMapping("/verify-email")

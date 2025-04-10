@@ -1,30 +1,35 @@
 package com.java.fiap.login.service.impl;
 
+import com.java.fiap.login.application.dto.InfoUserKeycloakDTO;
 import com.java.fiap.login.application.dto.UserKeycloak;
 import com.java.fiap.login.application.dto.UserLoginDTO;
 import com.java.fiap.login.application.dto.enums.UserTypeEnum;
 import com.java.fiap.login.domain.model.UserLogin;
 import com.java.fiap.login.service.KeycloakAdminService;
+import com.java.fiap.login.service.TokenRevocationService;
 import jakarta.ws.rs.InternalServerErrorException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class KeycloakAdminServiceImpl implements KeycloakAdminService {
-
-  private final Keycloak keycloak;
 
   @Value("${keycloak.auth-server-url}")
   private String keycloakServerUrl;
@@ -37,6 +42,9 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   @Value("${keycloak.credentials.secret}")
   private String keycloakClientSecret;
+
+  private final Keycloak keycloak;
+  private final TokenRevocationService tokenRevocationService;
 
   @Override
   public UserKeycloak createKeycloakUser(UserLogin userLogin, String password) {
@@ -98,6 +106,23 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
           e);
       throw new InternalServerErrorException(
           "Failed to confirm email for user: " + userLogin.getUsername());
+    }
+  }
+
+  @Override
+  public void logout(InfoUserKeycloakDTO userKeycloak) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+    if (auth != null && auth.getPrincipal() instanceof KeycloakPrincipal<?> principal) {
+      KeycloakSecurityContext session = principal.getKeycloakSecurityContext();
+      AccessToken accessToken = session.getToken();
+
+      UserResource userResource = getUserResource(userKeycloak.getUserId());
+      userResource.logout();
+
+      tokenRevocationService.revokeToken(userKeycloak, accessToken);
+    } else {
+      log.warn("Unable to log out: invalid or primary authentication is not of the expected type.");
     }
   }
 
