@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface UserLoginRepository extends JpaRepository<UserLogin, String> {
 
   UserLogin findByTokenVerification(String token);
+
+  UserLogin findByEmail(String email);
 }

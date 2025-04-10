@@ -26,7 +26,11 @@ public class OAuth2SecurityConfiguration {
     "/auth/login/**",
     "/auth/login",
     "/auth/verify-email",
-    "/auth/verify-email/**"
+    "/auth/verify-email/**",
+    "/auth/forgot-password",
+    "/auth/forgot-password/**",
+    "/auth/reset-password",
+    "/auth/reset-password/**"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")

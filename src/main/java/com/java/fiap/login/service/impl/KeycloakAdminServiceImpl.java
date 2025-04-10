@@ -126,6 +126,18 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     }
   }
 
+  @Override
+  public void resetPassword(UserLogin userLogin, String newPassword) {
+    UserResource userResource = getUserResource(userLogin.getId());
+
+    CredentialRepresentation credential = new CredentialRepresentation();
+    credential.setType(CredentialRepresentation.PASSWORD);
+    credential.setValue(newPassword);
+    credential.setTemporary(false);
+
+    userResource.resetPassword(credential);
+  }
+
   private void assignRoleToUser(String userId, String roleName, String client) {
     RoleRepresentation role = fetchClientRole(roleName, client);
     UserResource userResource = getUserResource(userId);

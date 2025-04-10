@@ -2,6 +2,8 @@ package com.java.fiap.login.presentation;
 
 import com.java.fiap.login.application.dto.InfoUserKeycloakDTO;
 import com.java.fiap.login.application.dto.UserLoginDTO;
+import com.java.fiap.login.application.dto.form.ForgotPasswordForm;
+import com.java.fiap.login.application.dto.form.NewPasswordForm;
 import com.java.fiap.login.service.KeycloakAdminService;
 import com.java.fiap.login.service.UserService;
 import java.io.IOException;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +47,19 @@ public class AuthenticationController {
   @PostMapping(value = "/logout")
   public ResponseEntity<Void> logout(@ModelAttribute final InfoUserKeycloakDTO userKeycloak) {
     keycloakAdminService.logout(userKeycloak);
+    return ResponseEntity.ok().build();
+  }
+
+  @PutMapping(value = "/forgot-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordForm forgotPasswordForm) {
+    userService.forgotPassword(forgotPasswordForm.email());
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping(value = "/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> resetPassword(
+      @RequestParam String token, @RequestBody NewPasswordForm newPasswordForm) {
+    userService.resetPassword(token, newPasswordForm);
     return ResponseEntity.ok().build();
   }
 

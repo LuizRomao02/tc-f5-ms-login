@@ -20,4 +20,6 @@ public interface KeycloakAdminService {
   void confirmEmail(UserLogin userLogin);
 
   void logout(InfoUserKeycloakDTO userKeycloak);
+
+  void resetPassword(UserLogin userLogin, String newPassword);
 }
