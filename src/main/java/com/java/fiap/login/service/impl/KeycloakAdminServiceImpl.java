@@ -1,14 +1,25 @@
 package com.java.fiap.login.service.impl;
 
 import com.java.fiap.login.application.dto.UserKeycloak;
+import com.java.fiap.login.application.dto.UserLoginDTO;
 import com.java.fiap.login.application.dto.enums.UserTypeEnum;
 import com.java.fiap.login.domain.model.UserLogin;
 import com.java.fiap.login.service.KeycloakAdminService;
 import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.client.Client;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
@@ -23,11 +34,17 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   private final Keycloak keycloak;
 
+  @Value("${keycloak.auth-server-url}")
+  private String keycloakServerUrl;
+
   @Value("${keycloak.realm}")
-  private String realm;
+  private String keycloakRealm;
 
   @Value("${keycloak.resource}")
-  private String clientId;
+  private String keycloakClientId;
+
+  @Value("${keycloak.credentials.secret}")
+  private String keycloakClientSecret;
 
   // ------------------------------------
   // Public Methods
@@ -43,12 +60,48 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Override
   public void addRoleToUser(UserLogin userLogin) {
     String roleName = getRoleNameByUserType(userLogin.getType());
-    assignRoleToUser(userLogin.getId(), roleName, clientId);
+    assignRoleToUser(userLogin.getId(), roleName, keycloakClientId);
+  }
+
+  @Override
+  public Keycloak getKeycloakUser(UserLoginDTO userLogin) {
+    ResteasyClientBuilder resteasyClientBuilder =
+        new ResteasyClientBuilderImpl().connectionPoolSize(10);
+
+    resteasyClientBuilder
+        .connectionPoolSize(10)
+        .disableTrustManager()
+        .hostnameVerification(ResteasyClientBuilder.HostnameVerificationPolicy.WILDCARD)
+        .sslContext(createSslContext());
+
+    Client client = resteasyClientBuilder.build();
+
+    return KeycloakBuilder.builder()
+        .serverUrl(keycloakServerUrl)
+        .realm(keycloakRealm)
+        .clientId(keycloakClientId)
+        .clientSecret(keycloakClientSecret)
+        .resteasyClient(client)
+        .username(userLogin.getUsername())
+        .password(userLogin.getPassword())
+        .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
+        .build();
   }
 
   // ------------------------------------
   // Private Helpers
   // ------------------------------------
+
+  private SSLContext createSslContext() {
+    try {
+      return new SSLContextBuilder()
+          .loadTrustMaterial(null, (x509Certificates, authType) -> true)
+          .build();
+    } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+      log.error("Error creating SSL context: {}", e.getMessage(), e);
+      throw new InternalServerErrorException(e);
+    }
+  }
 
   private void assignRoleToUser(String userId, String roleName, String client) {
     RoleRepresentation role = fetchClientRole(roleName, client);
@@ -150,6 +203,6 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   }
 
   private RealmResource getRealmResource() {
-    return keycloak.realm(realm);
+    return keycloak.realm(keycloakRealm);
   }
 }

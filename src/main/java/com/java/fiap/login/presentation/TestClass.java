@@ -23,6 +23,7 @@ public class TestClass {
             .id("id-teste-teste")
             .fullName("Luiz Romão")
             .password("123456")
+            .email("lh168205@gmail.com")
             .type(UserTypeEnum.DOCTOR)
             .name("Luiz")
             .build());
