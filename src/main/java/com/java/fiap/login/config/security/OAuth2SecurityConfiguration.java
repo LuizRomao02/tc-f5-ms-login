@@ -20,7 +20,12 @@ import org.springframework.security.web.SecurityFilterChain;
 public class OAuth2SecurityConfiguration {
 
   private static final String[] PUBLIC_ENDPOINTS = {
-    "/teste", "/teste/**", "/auth/login/**", "/auth/login"
+    "/teste",
+    "/teste/**",
+    "/auth/login/**",
+    "/auth/login",
+    "/auth/verify-email",
+    "/auth/verify-email/**"
   };
 
   @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")

@@ -69,11 +69,10 @@ logging:
       springframework:
         security: debug
 
-# Configurações para o keycloak-admin-client
 keycloak:
   realm: tech-fiap-qa
   resource: mslogin
-  disable-trust-manager: true
+  disable-trust-manager: false
   use-resource-role-mappings: true
   ssl-required: none
   principal-attribute: preferred_username
@@ -81,3 +80,5 @@ keycloak:
   public-client: false
   credentials:
     secret: ml5ioShdkK458ux5aJANFGYWHzlLNknM
+
+url-email: http://localhost:8081

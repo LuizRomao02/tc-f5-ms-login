@@ -13,7 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+  @Value("${url-email}")
+  private String url;
+
   private final KeycloakAdminService keycloakService;
   private final UserLoginRepository loginRepository;
   private final EmailService emailService;
@@ -29,29 +34,53 @@ public class UserServiceImpl implements UserService {
   @Transactional
   @Override
   public void createUser(UserRegisteredEvent event) {
+    String username = event.getType() + "_" + event.getId();
+
     UserLogin userLogin =
         UserLogin.builder()
             .userId(event.getId())
             .isEnabled(true)
-            .fullName(event.getFullName())
+            .firstName(event.getFirstName())
+            .lastName(event.getLastName())
             .type(event.getType())
             .email(event.getEmail())
-            .username(event.getType() + "_" + event.getId())
+            .username(username.toLowerCase())
             .build();
 
     UserKeycloak userKeycloak = keycloakService.createKeycloakUser(userLogin, event.getPassword());
 
     userLogin.setId(userKeycloak.getId());
+    userLogin.setEmailVerified(false);
+    userLogin.setTokenVerification(UUID.randomUUID().toString());
+
     loginRepository.save(userLogin);
     keycloakService.addRoleToUser(userLogin);
+
     sendNotificationNewAccount(userLogin);
   }
 
+  @Override
+  @Transactional
+  public void validateEmailUser(String token) {
+    UserLogin userLogin = loginRepository.findByTokenVerification(token);
+
+    if (userLogin != null) {
+      userLogin.setEmailVerified(true);
+      userLogin.setTokenVerification(null);
+      keycloakService.confirmEmail(userLogin);
+    } else {
+      throw new RuntimeException("Invalid token");
+    }
+  }
+
   private void sendNotificationNewAccount(UserLogin userLogin) {
+    String link = url + "/auth/verify-email?token=" + userLogin.getTokenVerification();
+
     Map<String, String> values = new HashMap<>();
-    values.put("name", userLogin.getFullName());
+    values.put("name", userLogin.getFirstName() + " " + userLogin.getLastName());
     values.put("username", userLogin.getUsername());
     values.put("loginType", userLogin.getType().name());
+    values.put("verifyEmailLink", link);
 
     String html = loadTemplate(values);
 

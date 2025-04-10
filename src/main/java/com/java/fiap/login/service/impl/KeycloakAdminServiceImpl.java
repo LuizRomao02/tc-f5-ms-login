@@ -6,17 +6,9 @@ import com.java.fiap.login.application.dto.enums.UserTypeEnum;
 import com.java.fiap.login.domain.model.UserLogin;
 import com.java.fiap.login.service.KeycloakAdminService;
 import jakarta.ws.rs.InternalServerErrorException;
-import jakarta.ws.rs.client.Client;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import javax.net.ssl.SSLContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -46,10 +38,6 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
   @Value("${keycloak.credentials.secret}")
   private String keycloakClientSecret;
 
-  // ------------------------------------
-  // Public Methods
-  // ------------------------------------
-
   @Override
   public UserKeycloak createKeycloakUser(UserLogin userLogin, String password) {
     UserRepresentation user = buildUserRepresentation(userLogin, password);
@@ -65,41 +53,51 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
 
   @Override
   public Keycloak getKeycloakUser(UserLoginDTO userLogin) {
-    ResteasyClientBuilder resteasyClientBuilder =
-        new ResteasyClientBuilderImpl().connectionPoolSize(10);
-
-    resteasyClientBuilder
-        .connectionPoolSize(10)
-        .disableTrustManager()
-        .hostnameVerification(ResteasyClientBuilder.HostnameVerificationPolicy.WILDCARD)
-        .sslContext(createSslContext());
-
-    Client client = resteasyClientBuilder.build();
-
-    return KeycloakBuilder.builder()
-        .serverUrl(keycloakServerUrl)
-        .realm(keycloakRealm)
-        .clientId(keycloakClientId)
-        .clientSecret(keycloakClientSecret)
-        .resteasyClient(client)
-        .username(userLogin.getUsername())
-        .password(userLogin.getPassword())
-        .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-        .build();
+    try {
+      return KeycloakBuilder.builder()
+          .serverUrl(keycloakServerUrl)
+          .realm(keycloakRealm)
+          .clientId(keycloakClientId)
+          .clientSecret(keycloakClientSecret)
+          .grantType(OAuth2Constants.PASSWORD)
+          .username(userLogin.getUsername())
+          .password(userLogin.getPassword())
+          .build();
+    } catch (Exception e) {
+      log.error("Error: {}", e.getMessage(), e);
+      throw e;
+    }
   }
 
-  // ------------------------------------
-  // Private Helpers
-  // ------------------------------------
-
-  private SSLContext createSslContext() {
+  @Override
+  public UserResource getUserResource(String userId) {
     try {
-      return new SSLContextBuilder()
-          .loadTrustMaterial(null, (x509Certificates, authType) -> true)
-          .build();
-    } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
-      log.error("Error creating SSL context: {}", e.getMessage(), e);
-      throw new InternalServerErrorException(e);
+      return getRealmResource().users().get(userId);
+    } catch (Exception e) {
+      log.error("Usuário {} não encontrado no Keycloak.", userId, e);
+      throw new InternalServerErrorException("Usuário não encontrado no Keycloak: " + userId);
+    }
+  }
+
+  @Override
+  public void confirmEmail(UserLogin userLogin) {
+    try {
+      UserResource userResource = getUserResource(userLogin.getId());
+      UserRepresentation userRepresentation = userResource.toRepresentation();
+
+      userRepresentation.setEmailVerified(true);
+
+      userResource.update(userRepresentation);
+
+      log.info("Email for user {} has been successfully confirmed.", userLogin.getUsername());
+    } catch (Exception e) {
+      log.error(
+          "Error while confirming email for user {}: {}",
+          userLogin.getUsername(),
+          e.getMessage(),
+          e);
+      throw new InternalServerErrorException(
+          "Failed to confirm email for user: " + userLogin.getUsername());
     }
   }
 
@@ -124,6 +122,8 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     user.setUsername(userLogin.getUsername());
     user.setEmail(userLogin.getEmail());
     user.setEnabled(true);
+    user.setFirstName(userLogin.getFirstName());
+    user.setLastName(userLogin.getLastName());
     user.setAttributes(buildUserAttributes(userLogin));
     user.setCredentials(List.of(buildPasswordCredential(password)));
     return user;
@@ -156,7 +156,7 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
     return getRealmResource().users().search(username, true).stream()
         .findFirst()
         .map(this::toUserKeycloak)
-        .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + username));
+        .orElseThrow(() -> new RuntimeException("User not found: " + username));
   }
 
   private UserKeycloak toUserKeycloak(UserRepresentation user) {
@@ -187,15 +187,6 @@ public class KeycloakAdminServiceImpl implements KeycloakAdminService {
         .findFirst()
         .map(ClientRepresentation::getId)
         .orElseThrow(() -> new InternalServerErrorException("Client not found: " + client));
-  }
-
-  private UserResource getUserResource(String userId) {
-    try {
-      return getRealmResource().users().get(userId);
-    } catch (Exception e) {
-      log.error("Usuário {} não encontrado no Keycloak.", userId, e);
-      throw new InternalServerErrorException("Usuário não encontrado no Keycloak: " + userId);
-    }
   }
 
   private UsersResource getUsersResource() {

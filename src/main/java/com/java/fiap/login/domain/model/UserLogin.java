@@ -30,10 +30,18 @@ public class UserLogin {
   @Column(nullable = false)
   private String username;
 
-  private String fullName;
+  @Column(nullable = false)
+  private String firstName;
+
+  @Column(nullable = false)
+  private String lastName;
 
   @Column(nullable = false)
   private String email;
+
+  private boolean emailVerified = false;
+
+  private String tokenVerification;
 
   @Column(nullable = false)
   private LocalDateTime createdAt;
