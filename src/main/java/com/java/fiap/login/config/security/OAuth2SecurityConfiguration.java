@@ -21,8 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 public class OAuth2SecurityConfiguration {
 
   private static final String[] PUBLIC_ENDPOINTS = {
-    "/teste",
-    "/teste/**",
     "/auth/login/**",
     "/auth/login",
     "/auth/verify-email",
