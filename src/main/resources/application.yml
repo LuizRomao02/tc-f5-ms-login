@@ -3,8 +3,12 @@ server:
 
 spring:
   application:
-    name: ms-login
-
+    name: tc-f5-ms-login
+  cloud:
+    discovery:
+      enabled: true
+    function:
+      definition: validateTokenRevocation
   mail:
     host: smtp.gmail.com
     port: 587

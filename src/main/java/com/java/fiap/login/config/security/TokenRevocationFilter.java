@@ -38,6 +38,8 @@ public class TokenRevocationFilter extends OncePerRequestFilter {
         response.getWriter().write("Token has been revoked");
         return;
       }
+
+      SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     filterChain.doFilter(request, response);
