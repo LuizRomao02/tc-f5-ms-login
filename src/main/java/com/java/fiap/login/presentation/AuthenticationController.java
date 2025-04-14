@@ -12,10 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.keycloak.admin.client.Keycloak;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@Slf4j
 public class AuthenticationController {
 
   private final KeycloakAdminService keycloakAdminService;
@@ -31,17 +27,14 @@ public class AuthenticationController {
 
   @PostMapping(value = "/login")
   public ResponseEntity<Map<String, String>> login(@RequestBody UserLoginDTO login) {
-    try {
-      Keycloak keycloak = keycloakAdminService.getKeycloakUser(login);
-      String token = keycloak.tokenManager().getAccessToken().getToken();
-
-      return ResponseEntity.ok(Map.of("access_token", token));
-
-    } catch (Exception e) {
-      log.error("Error Token Keycloak: {}", e.getMessage(), e);
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("error", "Username or password incorrect"));
-    }
+    return ResponseEntity.ok(
+        Map.of(
+            "access_token",
+            keycloakAdminService
+                .getKeycloakUser(login)
+                .tokenManager()
+                .getAccessToken()
+                .getToken()));
   }
 
   @PostMapping(value = "/logout")
