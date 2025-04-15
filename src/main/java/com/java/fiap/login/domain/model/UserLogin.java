@@ -39,6 +39,7 @@ public class UserLogin {
   @Column(nullable = false)
   private String email;
 
+  @Builder.Default
   private boolean emailVerified = false;
 
   private String tokenVerification;
