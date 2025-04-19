@@ -26,3 +26,23 @@ services:
       - "8021:8080"
     depends_on:
       - keycloak-fiap-db
+
+  mysql-db:
+    image: mysql
+    container_name: mysql-fiap
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+
+  rabbitmq-db:
+    image: rabbitmq
+    container_name: rabbitmq-fiap
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
